@@ -9,10 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class AccountingViewModel : ViewModel() {
     private val TAG = "AccountingViewModel"
-    private val api = RetrofitInstance.api 
+    private val api = RetrofitInstance.api
 
     private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
     val expenses: StateFlow<List<Expense>> = _expenses.asStateFlow()
@@ -29,14 +30,21 @@ class AccountingViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Filter state
-    var fromDate = MutableStateFlow<String?>(null)
-    var toDate = MutableStateFlow<String?>(null)
+    // Filter state - 默认当前月份
+    var fromDate = MutableStateFlow<String?>(monthStart())
+    var toDate = MutableStateFlow<String?>(monthEnd())
     var selectedCategory = MutableStateFlow<String?>(null)
     var searchQuery = MutableStateFlow("")
 
+    private fun monthStart(): String = "${LocalDate.now().year}-${String.format("%02d", LocalDate.now().monthValue)}-01"
+    private fun monthEnd(): String {
+        val now = LocalDate.now()
+        val lastDay = now.withDayOfMonth(now.lengthOfMonth())
+        return lastDay.toString()
+    }
+
     init {
-        Log.d(TAG, "Initializing AccountingViewModel")
+        Log.d(TAG, "Initializing AccountingViewModel (default: ${fromDate.value} ~ ${toDate.value})")
         refreshAll()
     }
 
@@ -50,6 +58,21 @@ class AccountingViewModel : ViewModel() {
                 fetchStats()
             } catch (e: Exception) {
                 Log.e(TAG, "Error in refreshAll: ${e.message}")
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun refreshStatsOnly() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                fetchStats()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error refreshing stats: ${e.message}")
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
@@ -132,8 +155,8 @@ class AccountingViewModel : ViewModel() {
     }
 
     fun resetFilters() {
-        fromDate.value = null
-        toDate.value = null
+        fromDate.value = monthStart()
+        toDate.value = monthEnd()
         selectedCategory.value = null
         searchQuery.value = ""
         refreshAll()

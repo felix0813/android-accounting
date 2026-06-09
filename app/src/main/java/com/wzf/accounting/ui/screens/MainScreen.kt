@@ -1,6 +1,7 @@
 package com.wzf.accounting.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -23,6 +25,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,9 +41,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +61,10 @@ import com.wzf.accounting.ui.components.ExpenseItem
 import com.wzf.accounting.ui.components.SummaryCard
 import com.wzf.accounting.ui.viewmodel.AccountingViewModel
 import kotlinx.coroutines.flow.StateFlow
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -173,50 +183,6 @@ fun MainScreen(viewModel: AccountingViewModel) {
                     )
                 }
 
-                // Stats Section Header
-                item {
-                    Text(
-                        text = "统计洞察",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                    )
-                }
-
-                // Stats by Category
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("按类别", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            stats?.byCategory?.forEach { catStat ->
-                                CategoryStatItem(catStat.category, catStat.total, catStat.count)
-                            }
-                        }
-                    }
-                }
-
-                // Stats by Month
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("按月份", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            stats?.byMonth?.forEach { monthStat ->
-                                MonthStatItem(monthStat.month, monthStat.total, monthStat.count)
-                            }
-                        }
-                    }
-                }
-
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
 
@@ -244,13 +210,7 @@ fun MainScreen(viewModel: AccountingViewModel) {
                     onDismiss = { showAddDialog = false },
                     onConfirm = { amount, category, note, date ->
                         if (expenseToEdit != null) {
-                            viewModel.updateExpense(
-                                expenseToEdit!!.id,
-                                amount,
-                                category,
-                                note,
-                                date
-                            )
+                            viewModel.updateExpense(expenseToEdit!!.id, amount, category, note, date)
                         } else {
                             viewModel.addExpense(amount, category, note, date)
                         }
@@ -262,6 +222,78 @@ fun MainScreen(viewModel: AccountingViewModel) {
     }
 }
 
+// ---------- 将毫秒值转换为 YYYY-MM-DD ----------
+private fun millisToDateStr(millis: Long): String {
+    return Instant.ofEpochMilli(millis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .format(DateTimeFormatter.ISO_LOCAL_DATE)
+}
+
+private fun dateStrToMillis(dateStr: String?): Long? {
+    if (dateStr.isNullOrBlank()) return null
+    return try {
+        LocalDate.parse(dateStr)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    } catch (_: Exception) {
+        null
+    }
+}
+
+// ---------- 日期选择输入框 ----------
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerField(
+    label: String,
+    dateStr: String?,
+    onDateSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    val pickerState = rememberDatePickerState(initialSelectedDateMillis = dateStrToMillis(dateStr))
+
+    OutlinedTextField(
+        value = dateStr ?: "",
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label) },
+        modifier = modifier
+            .clickable { showDialog = true },
+        trailingIcon = {
+            IconButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.DateRange, contentDescription = "选择日期")
+            }
+        },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true
+    )
+
+    if (showDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { millis ->
+                            onDateSelected(millisToDateStr(millis))
+                        }
+                        showDialog = false
+                    }
+                ) { Text("确定") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("取消") }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
+// ---------- 筛选区 ----------
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterSection(viewModel: AccountingViewModel) {
     var query by remember { mutableStateOf(viewModel.searchQuery.value) }
@@ -269,7 +301,6 @@ fun FilterSection(viewModel: AccountingViewModel) {
     val toDate by viewModel.toDate.collectAsState()
     val selectedCat by viewModel.selectedCategory.collectAsState()
     val categories by viewModel.categories.collectAsState()
-
     var showCatMenu by remember { mutableStateOf(false) }
 
     Card(
@@ -281,7 +312,6 @@ fun FilterSection(viewModel: AccountingViewModel) {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Search Query
             OutlinedTextField(
                 value = query,
                 onValueChange = {
@@ -296,7 +326,6 @@ fun FilterSection(viewModel: AccountingViewModel) {
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Category Filter
                 Box(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = selectedCat ?: "全部类别",
@@ -336,25 +365,17 @@ fun FilterSection(viewModel: AccountingViewModel) {
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // From Date
-                OutlinedTextField(
-                    value = fromDate ?: "",
-                    onValueChange = { viewModel.fromDate.value = it },
-                    label = { Text("开始日期") },
-                    placeholder = { Text("YYYY-MM-DD") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                DatePickerField(
+                    label = "开始日期",
+                    dateStr = fromDate,
+                    onDateSelected = { viewModel.fromDate.value = it },
+                    modifier = Modifier.weight(1f)
                 )
-                // To Date
-                OutlinedTextField(
-                    value = toDate ?: "",
-                    onValueChange = { viewModel.toDate.value = it },
-                    label = { Text("结束日期") },
-                    placeholder = { Text("YYYY-MM-DD") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                DatePickerField(
+                    label = "结束日期",
+                    dateStr = toDate,
+                    onDateSelected = { viewModel.toDate.value = it },
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -384,34 +405,7 @@ fun FilterSection(viewModel: AccountingViewModel) {
     }
 }
 
-@Composable
-fun CategoryStatItem(category: String, total: Double, count: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(category, modifier = Modifier.weight(1f))
-        Text("¥${String.format("%.2f", total)}", fontWeight = FontWeight.Bold)
-        Text(" ($count)", color = Color.Gray, fontSize = 12.sp)
-    }
-}
-
-@Composable
-fun MonthStatItem(month: String, total: Double, count: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(month, modifier = Modifier.weight(1f))
-        Text("¥${String.format("%.2f", total)}", fontWeight = FontWeight.Bold)
-        Text(" ($count)", color = Color.Gray, fontSize = 12.sp)
-    }
-}
-
+// ---------- Add / Edit 弹窗 ----------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseDialog(
@@ -423,16 +417,12 @@ fun AddExpenseDialog(
     var amount by remember { mutableStateOf(expense?.amount?.toString() ?: "") }
     var note by remember { mutableStateOf(expense?.note ?: "") }
     var selectedCategory by remember {
-        mutableStateOf(
-            expense?.category ?: if (categories.isNotEmpty()) categories[0] else ""
-        )
+        mutableStateOf(expense?.category ?: if (categories.isNotEmpty()) categories[0] else "")
     }
     var date by remember {
-        mutableStateOf(
-            expense?.spentAt ?: java.time.LocalDate.now().toString()
-        )
+        mutableStateOf(expense?.spentAt ?: LocalDate.now().toString())
     }
-
+    var showDatePicker by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -477,13 +467,44 @@ fun AddExpenseDialog(
                     }
                 }
 
+                // 日期：点击后弹出 DatePickerDialog
+                val pickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = dateStrToMillis(date)
+                )
                 OutlinedTextField(
                     value = date,
-                    onValueChange = { date = it },
-                    label = { Text("日期 (YYYY-MM-DD)") },
-                    modifier = Modifier.fillMaxWidth(),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("日期") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "选择日期")
+                        }
+                    },
                     singleLine = true
                 )
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                pickerState.selectedDateMillis?.let { millis ->
+                                    date = millisToDateStr(millis)
+                                }
+                                showDatePicker = false
+                            }) { Text("确定") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) { Text("取消") }
+                        }
+                    ) {
+                        DatePicker(state = pickerState)
+                    }
+                }
 
                 OutlinedTextField(
                     value = note,
@@ -513,6 +534,5 @@ fun AddExpenseDialog(
     )
 }
 
-// Helper to use state flow with remember
 @Composable
 fun <T> rememberStateFlow(flow: StateFlow<T>): State<T> = flow.collectAsState()
