@@ -306,7 +306,7 @@ fun StatsScreen(viewModel: AccountingViewModel) {
                     }
                 }
 
-                item { Spacer(modifier = Modifier.height(16.dp)) }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
 
             if (isLoading) {

@@ -48,6 +48,11 @@ class AccountingViewModel : ViewModel() {
         refreshAll()
     }
 
+    private fun cleanMsg(msg: String?): String = msg
+        ?.replace(Regex("/[0-9a-fA-F:.]+\\s*\\(port\\s*\\d+\\)"), "")
+        ?.replace(Regex("/[0-9a-fA-F:.]+"), "")
+        ?.trim() ?: "Unknown error"
+
     fun refreshAll() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -58,7 +63,7 @@ class AccountingViewModel : ViewModel() {
                 fetchStats()
             } catch (e: Exception) {
                 Log.e(TAG, "Error in refreshAll: ${e.message}")
-                _error.value = e.message
+                _error.value = cleanMsg(e.message)
             } finally {
                 _isLoading.value = false
             }
@@ -73,7 +78,7 @@ class AccountingViewModel : ViewModel() {
                 fetchStats()
             } catch (e: Exception) {
                 Log.e(TAG, "Error refreshing stats: ${e.message}")
-                _error.value = e.message
+                _error.value = cleanMsg(e.message)
             } finally {
                 _isLoading.value = false
             }
@@ -113,7 +118,7 @@ class AccountingViewModel : ViewModel() {
                 refreshAll()
             } catch (e: Exception) {
                 Log.e(TAG, "addExpense failed: ${e.message}")
-                _error.value = e.message
+                _error.value = cleanMsg(e.message)
             } finally {
                 _isLoading.value = false
             }
@@ -128,7 +133,7 @@ class AccountingViewModel : ViewModel() {
                 refreshAll()
             } catch (e: Exception) {
                 Log.e(TAG, "updateExpense failed: ${e.message}")
-                _error.value = e.message
+                _error.value = cleanMsg(e.message)
             } finally {
                 _isLoading.value = false
             }
@@ -143,7 +148,7 @@ class AccountingViewModel : ViewModel() {
                 refreshAll()
             } catch (e: Exception) {
                 Log.e(TAG, "deleteExpense failed: ${e.message}")
-                _error.value = e.message
+                _error.value = cleanMsg(e.message)
             } finally {
                 _isLoading.value = false
             }

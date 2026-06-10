@@ -36,7 +36,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -77,8 +76,9 @@ fun MainScreen(viewModel: AccountingViewModel) {
     var showAddDialog by remember { mutableStateOf(false) }
     var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
 
-    Scaffold(
-        topBar = {
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // TopAppBar
             TopAppBar(
                 title = { Text("记账助手", fontWeight = FontWeight.Bold) },
                 actions = {
@@ -92,132 +92,134 @@ fun MainScreen(viewModel: AccountingViewModel) {
                     actionIconContentColor = Color.White
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    expenseToEdit = null
-                    showAddDialog = true
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "添加开销")
-            }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF5F7FA))
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                // Summary Cards
-                item {
-                    stats?.summary?.let { summary ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+            // 主内容区域
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item { Spacer(modifier = Modifier.height(8.dp)) }
+
+                    // Summary Cards
+                    item {
+                        stats?.summary?.let { summary ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                SummaryCard(
+                                    title = "总支出",
+                                    value = "¥${String.format("%.2f", summary.total)}",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                SummaryCard(
+                                    title = "记录数",
+                                    value = "${summary.count}",
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        stats?.summary?.let { summary ->
+                            val avg = if (summary.count > 0) summary.total / summary.count else 0.0
                             SummaryCard(
-                                title = "总支出",
-                                value = "¥${String.format("%.2f", summary.total)}",
-                                modifier = Modifier.weight(1f)
-                            )
-                            SummaryCard(
-                                title = "记录数",
-                                value = "${summary.count}",
-                                modifier = Modifier.weight(1f)
+                                title = "平均单笔",
+                                value = "¥${String.format("%.2f", avg)}"
                             )
                         }
                     }
-                }
 
-                item {
-                    stats?.summary?.let { summary ->
-                        val avg = if (summary.count > 0) summary.total / summary.count else 0.0
-                        SummaryCard(
-                            title = "平均单笔",
-                            value = "¥${String.format("%.2f", avg)}"
+                    // Filter Section
+                    item {
+                        FilterSection(viewModel)
+                    }
+
+                    // Expense List Header
+                    item {
+                        Text(
+                            text = "开销记录",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                }
 
-                // Filter Section
-                item {
-                    FilterSection(viewModel)
-                }
-
-                // Expense List Header
-                item {
-                    Text(
-                        text = "开销记录",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                // Expense List
-                items(expenses) { expense ->
-                    ExpenseItem(
-                        category = expense.category,
-                        note = expense.note,
-                        amount = expense.amount,
-                        date = expense.spentAt,
-                        onEdit = {
-                            expenseToEdit = expense
-                            showAddDialog = true
-                        },
-                        onDelete = {
-                            viewModel.deleteExpense(expense.id)
-                        }
-                    )
-                }
-
-                item { Spacer(modifier = Modifier.height(80.dp)) }
-            }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-
-            error?.let {
-                AlertDialog(
-                    onDismissRequest = { viewModel.clearError() },
-                    title = { Text("错误") },
-                    text = { Text(it) },
-                    confirmButton = {
-                        TextButton(onClick = { viewModel.clearError() }) {
-                            Text("确定")
-                        }
+                    // Expense List
+                    items(expenses) { expense ->
+                        ExpenseItem(
+                            category = expense.category,
+                            note = expense.note,
+                            amount = expense.amount,
+                            date = expense.spentAt,
+                            onEdit = {
+                                expenseToEdit = expense
+                                showAddDialog = true
+                            },
+                            onDelete = {
+                                viewModel.deleteExpense(expense.id)
+                            }
+                        )
                     }
-                )
-            }
 
-            if (showAddDialog) {
-                AddExpenseDialog(
-                    expense = expenseToEdit,
-                    categories = viewModel.categories.collectAsState().value,
-                    onDismiss = { showAddDialog = false },
-                    onConfirm = { amount, category, note, date ->
-                        if (expenseToEdit != null) {
-                            viewModel.updateExpense(expenseToEdit!!.id, amount, category, note, date)
-                        } else {
-                            viewModel.addExpense(amount, category, note, date)
-                        }
-                        showAddDialog = false
-                    }
-                )
+                    // 底部留白给 FAB
+                    item { Spacer(modifier = Modifier.height(72.dp)) }
+                }
+
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
             }
+        }
+
+        // FAB — 放在 Box 最上层，加上底栏偏移
+        FloatingActionButton(
+            onClick = {
+                expenseToEdit = null
+                showAddDialog = true
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 16.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.White
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "添加开销")
+        }
+
+        // 错误弹窗
+        error?.let {
+            AlertDialog(
+                onDismissRequest = { viewModel.clearError() },
+                title = { Text("错误") },
+                text = { Text(it) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text("确定")
+                    }
+                }
+            )
+        }
+
+        // 新增/编辑弹窗
+        if (showAddDialog) {
+            AddExpenseDialog(
+                expense = expenseToEdit,
+                categories = viewModel.categories.collectAsState().value,
+                onDismiss = { showAddDialog = false },
+                onConfirm = { amount, category, note, date ->
+                    if (expenseToEdit != null) {
+                        viewModel.updateExpense(expenseToEdit!!.id, amount, category, note, date)
+                    } else {
+                        viewModel.addExpense(amount, category, note, date)
+                    }
+                    showAddDialog = false
+                }
+            )
         }
     }
 }
