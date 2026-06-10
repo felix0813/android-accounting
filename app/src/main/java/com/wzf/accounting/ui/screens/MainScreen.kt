@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,10 +37,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -78,20 +78,37 @@ fun MainScreen(viewModel: AccountingViewModel) {
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // TopAppBar
-            TopAppBar(
-                title = { Text("记账助手", fontWeight = FontWeight.Bold) },
-                actions = {
+            // 顶栏 — 用 Surface + Row 替代 TopAppBar 避免高度裁剪问题
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "记账助手",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp)
+                    )
                     IconButton(onClick = { viewModel.refreshAll() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "刷新",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    actionIconContentColor = Color.White
-                )
-            )
+                }
+            }
 
             // 主内容区域
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
