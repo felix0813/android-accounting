@@ -62,3 +62,23 @@ data class MonthStat(
     val total: Double,
     val count: Int
 )
+
+
+@Serializable
+data class AutoAccountingNotification(
+    val id: String,
+    val packageName: String,
+    val appName: String,
+    val title: String,
+    val content: String,
+    val postedAt: Long,
+    val capturedAt: Long,
+    val fromActiveSnapshot: Boolean,
+    val isRecorded: Boolean = false
+)
+
+data class SelectableApp(
+    val packageName: String,
+    val appName: String,
+    val isSelected: Boolean
+)

@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.wzf.accounting.ui.screens.AutoAccountingScreen
 import com.wzf.accounting.ui.screens.MainScreen
 import com.wzf.accounting.ui.screens.StatsScreen
 import com.wzf.accounting.ui.theme.AccountingTheme
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
                 val navItems = remember {
                     listOf(
                         BottomNavItem("账单", Icons.AutoMirrored.Filled.List),
+                        BottomNavItem("自动", Icons.Default.Star),
                         BottomNavItem("统计", Icons.Default.Star)
                     )
                 }
@@ -66,7 +68,8 @@ class MainActivity : ComponentActivity() {
                         0 -> Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
                             MainScreen(viewModel = viewModel)
                         }
-                        1 -> StatsScreen(viewModel = viewModel)
+                        1 -> AutoAccountingScreen(viewModel = viewModel)
+                        2 -> StatsScreen(viewModel = viewModel)
                     }
                 }
             }
