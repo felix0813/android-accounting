@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,7 +68,7 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))) {
         Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -75,13 +76,15 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp)
                 )
                 IconButton(onClick = { showNotificationSources = !showNotificationSources }) {
-                    Icon(Icons.Default.List, contentDescription = "通知来源", tint = Color.White)
+                    Icon(Icons.Default.List, contentDescription = "通知来源", tint = Color.White, modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = { viewModel.refreshNotificationData() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "刷新", tint = Color.White)
+                    Icon(Icons.Default.Refresh, contentDescription = "刷新", tint = Color.White, modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = {
                     try {
@@ -89,7 +92,7 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                     } catch (_: ActivityNotFoundException) {
                         Toast.makeText(context, "无法打开通知访问设置", Toast.LENGTH_SHORT).show()
                     }
-                }) { Icon(Icons.Default.Settings, contentDescription = "通知权限", tint = Color.White) }
+                }) { Icon(Icons.Default.Settings, contentDescription = "通知权限", tint = Color.White, modifier = Modifier.size(20.dp)) }
             }
         }
 

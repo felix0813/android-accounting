@@ -68,8 +68,12 @@ class MainActivity : ComponentActivity() {
                         0 -> Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
                             MainScreen(viewModel = viewModel)
                         }
-                        1 -> AutoAccountingScreen(viewModel = viewModel)
-                        2 -> StatsScreen(viewModel = viewModel)
+                        1 -> Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                            AutoAccountingScreen(viewModel = viewModel)
+                        }
+                        2 -> Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                            StatsScreen(viewModel = viewModel)
+                        }
                     }
                 }
             }
