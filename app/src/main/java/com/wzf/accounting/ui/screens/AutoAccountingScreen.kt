@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -58,10 +59,10 @@ import java.util.Locale
 @Composable
 fun AutoAccountingScreen(viewModel: AccountingViewModel) {
     val notifications by viewModel.filteredNotifications.collectAsState()
-    val apps by viewModel.selectableApps.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val context = LocalContext.current
     var activeNotification by remember { mutableStateOf<AutoAccountingNotification?>(null) }
+    var showNotificationSources by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))) {
         Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier.fillMaxWidth()) {
@@ -69,7 +70,16 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                 modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("自动记账", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    if (showNotificationSources) "通知来源" else "自动记账",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { showNotificationSources = !showNotificationSources }) {
+                    Icon(Icons.Default.List, contentDescription = "通知来源", tint = Color.White)
+                }
                 IconButton(onClick = { viewModel.refreshNotificationData() }) {
                     Icon(Icons.Default.Refresh, contentDescription = "刷新", tint = Color.White)
                 }
@@ -83,30 +93,16 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
             }
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("通知来源", fontWeight = FontWeight.Bold)
-                        Text("未勾选任何应用时会截取所有应用通知；勾选后仅保留指定应用中标题或内容包含数字的通知。", fontSize = 13.sp, color = Color.Gray)
-                        OutlinedButton(onClick = { viewModel.captureAllNotificationApps() }, modifier = Modifier.fillMaxWidth()) { Text("截取所有应用") }
-                        apps.forEach { app ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Checkbox(checked = app.isSelected, onCheckedChange = { viewModel.toggleNotificationApp(app.packageName) })
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(app.appName)
-                                    Text(app.packageName, fontSize = 12.sp, color = Color.Gray)
-                                }
-                            }
-                        }
-                    }
+        if (showNotificationSources) {
+            NotificationSourcesPage(viewModel = viewModel)
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { Text("待处理通知（${notifications.size}）", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+                items(notifications) { notification ->
+                    NotificationCard(notification, onRecord = { activeNotification = notification }, onDelete = { viewModel.deleteStoredNotification(notification.id) })
                 }
+                item { Spacer(modifier = Modifier.height(72.dp)) }
             }
-            item { Text("待处理通知（${notifications.size}）", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
-            items(notifications) { notification ->
-                NotificationCard(notification, onRecord = { activeNotification = notification }, onDelete = { viewModel.deleteStoredNotification(notification.id) })
-            }
-            item { Spacer(modifier = Modifier.height(72.dp)) }
         }
     }
 
@@ -120,6 +116,35 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                 activeNotification = null
             }
         )
+    }
+}
+
+@Composable
+private fun NotificationSourcesPage(viewModel: AccountingViewModel) {
+    val apps by viewModel.selectableApps.collectAsState()
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("通知来源", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("未勾选任何应用时会截取所有应用通知；勾选后仅保留指定应用中标题或内容包含数字的通知。", fontSize = 13.sp, color = Color.Gray)
+                    OutlinedButton(onClick = { viewModel.captureAllNotificationApps() }, modifier = Modifier.fillMaxWidth()) { Text("截取所有应用") }
+                }
+            }
+        }
+        items(apps) { app ->
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                    Checkbox(checked = app.isSelected, onCheckedChange = { viewModel.toggleNotificationApp(app.packageName) })
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(app.appName, fontWeight = FontWeight.SemiBold)
+                        Text(app.packageName, fontSize = 12.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(72.dp)) }
     }
 }
 
