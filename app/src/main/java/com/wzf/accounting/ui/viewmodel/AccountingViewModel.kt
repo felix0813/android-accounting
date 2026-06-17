@@ -1,9 +1,14 @@
 package com.wzf.accounting.ui.viewmodel
 
+import android.app.Application
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.provider.Settings
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.wzf.accounting.data.api.RetrofitInstance
+import com.wzf.accounting.data.local.NotificationStore
 import com.wzf.accounting.data.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,9 +16,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-class AccountingViewModel : ViewModel() {
+class AccountingViewModel(application: Application) : AndroidViewModel(application) {
     private val TAG = "AccountingViewModel"
     private val api = RetrofitInstance.api
+    private val notificationStore = NotificationStore(application)
+
+    private val _filteredNotifications = MutableStateFlow<List<AutoAccountingNotification>>(emptyList())
+    val filteredNotifications: StateFlow<List<AutoAccountingNotification>> = _filteredNotifications.asStateFlow()
+
+    private val _selectableApps = MutableStateFlow<List<SelectableApp>>(emptyList())
+    val selectableApps: StateFlow<List<SelectableApp>> = _selectableApps.asStateFlow()
 
     private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
     val expenses: StateFlow<List<Expense>> = _expenses.asStateFlow()
@@ -46,6 +58,7 @@ class AccountingViewModel : ViewModel() {
     init {
         Log.d(TAG, "Initializing AccountingViewModel (default: ${fromDate.value} ~ ${toDate.value})")
         refreshAll()
+        refreshNotificationData()
     }
 
     private fun cleanMsg(msg: String?): String = msg
@@ -108,6 +121,65 @@ class AccountingViewModel : ViewModel() {
             to = toDate.value
         )
         _stats.value = response
+    }
+
+    fun refreshNotificationData() {
+        viewModelScope.launch {
+            _filteredNotifications.value = notificationStore.getNotifications()
+            loadSelectableApps()
+        }
+    }
+
+    fun toggleNotificationApp(packageName: String) {
+        val selected = notificationStore.getSelectedPackages().toMutableSet()
+        if (!selected.add(packageName)) selected.remove(packageName)
+        notificationStore.setSelectedPackages(selected)
+        refreshNotificationData()
+    }
+
+    fun captureAllNotificationApps() {
+        notificationStore.setSelectedPackages(emptySet())
+        refreshNotificationData()
+    }
+
+    fun deleteStoredNotification(id: String) {
+        notificationStore.deleteNotification(id)
+        refreshNotificationData()
+    }
+
+    fun addExpenseFromNotification(notificationId: String, amount: Double, category: String, note: String, spentAt: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                api.createExpense(ExpenseInput(amount, category, note, spentAt))
+                notificationStore.markRecorded(notificationId)
+                refreshNotificationData()
+                refreshAll()
+            } catch (e: Exception) {
+                Log.e(TAG, "addExpenseFromNotification failed: ${e.message}", e)
+                _error.value = cleanMsg(e.message)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun notificationSettingsIntent(): Intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+
+    private fun loadSelectableApps() {
+        val selected = notificationStore.getSelectedPackages()
+        val pm = getApplication<Application>().packageManager
+        val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+            .map { app ->
+                SelectableApp(
+                    packageName = app.packageName,
+                    appName = pm.getApplicationLabel(app).toString(),
+                    isSelected = selected.contains(app.packageName)
+                )
+            }
+            .sortedWith(compareByDescending<SelectableApp> { it.isSelected }.thenBy { it.appName.lowercase() })
+        _selectableApps.value = apps
     }
 
     fun addExpense(amount: Double, category: String, note: String, spentAt: String) {
