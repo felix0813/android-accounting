@@ -17,9 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -88,7 +87,7 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                 }) {
                     Icon(
                         // 这里使用了系统默认的导航返回图标，如果项目中没有，可以继续使用 List 图标，或者导入 NavigationIcon
-                        imageVector = if (showNotificationSources) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.List,
+                        imageVector = if (showNotificationSources) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.List,
                         contentDescription = if (showNotificationSources) "返回" else "通知来源",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
