@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
@@ -68,11 +70,34 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FA))) {
         Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 1. 左侧图标逻辑：根据当前显示的页面决定是“返回”还是“列表切换”
+                IconButton(onClick = {
+                    showNotificationSources = if (showNotificationSources) {
+                        // 如果当前在通知来源页面，点击返回主页面
+                        false
+                    } else {
+                        // 如果在主页面，点击切换显示通知来源
+                        true
+                    }
+                }) {
+                    Icon(
+                        // 这里使用了系统默认的导航返回图标，如果项目中没有，可以继续使用 List 图标，或者导入 NavigationIcon
+                        imageVector = if (showNotificationSources) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.List,
+                        contentDescription = if (showNotificationSources) "返回" else "通知来源",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // 2. 中间标题
                 Text(
-                    if (showNotificationSources) "通知来源" else "自动记账",
+                    text = if (showNotificationSources) "通知来源" else "自动记账",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -80,19 +105,21 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                         .weight(1f)
                         .padding(start = 12.dp)
                 )
-                IconButton(onClick = { showNotificationSources = !showNotificationSources }) {
-                    Icon(Icons.Default.List, contentDescription = "通知来源", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
+
+                // 3. 右侧图标保持不变（刷新和设置）
                 IconButton(onClick = { viewModel.refreshNotificationData() }) {
                     Icon(Icons.Default.Refresh, contentDescription = "刷新", tint = Color.White, modifier = Modifier.size(20.dp))
                 }
+
                 IconButton(onClick = {
                     try {
                         context.startActivity(viewModel.notificationSettingsIntent())
                     } catch (_: ActivityNotFoundException) {
                         Toast.makeText(context, "无法打开通知访问设置", Toast.LENGTH_SHORT).show()
                     }
-                }) { Icon(Icons.Default.Settings, contentDescription = "通知权限", tint = Color.White, modifier = Modifier.size(20.dp)) }
+                }) {
+                    Icon(Icons.Default.Settings, contentDescription = "通知权限", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
             }
         }
 
