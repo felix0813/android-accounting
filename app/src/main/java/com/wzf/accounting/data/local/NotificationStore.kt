@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.wzf.accounting.data.model.AutoAccountingNotification
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import androidx.core.content.edit
 
 class NotificationStore(context: Context) {
     private val prefs: SharedPreferences = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -52,13 +52,13 @@ class NotificationStore(context: Context) {
     fun getSelectedPackages(): Set<String> = prefs.getStringSet(KEY_SELECTED_PACKAGES, emptySet()).orEmpty()
 
     fun setSelectedPackages(packages: Set<String>) {
-        prefs.edit().putStringSet(KEY_SELECTED_PACKAGES, packages).apply()
+        prefs.edit { putStringSet(KEY_SELECTED_PACKAGES, packages) }
         Log.d(TAG, "Updated selected notification packages: ${packages.size}")
     }
 
     private fun persist(notifications: List<AutoAccountingNotification>) {
         runCatching {
-            prefs.edit().putString(KEY_NOTIFICATIONS, json.encodeToString(notifications)).apply()
+            prefs.edit { putString(KEY_NOTIFICATIONS, json.encodeToString(notifications)) }
         }.onFailure { Log.e(TAG, "Failed to persist filtered notifications", it) }
     }
 

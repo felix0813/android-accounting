@@ -41,6 +41,7 @@ import com.wzf.accounting.ui.screens.MainScreen
 import com.wzf.accounting.ui.screens.StatsScreen
 import com.wzf.accounting.ui.theme.AccountingTheme
 import com.wzf.accounting.ui.viewmodel.AccountingViewModel
+import androidx.core.net.toUri
 
 data class BottomNavItem(
     val label: String,
@@ -165,7 +166,7 @@ class MainActivity : ComponentActivity() {
             try {
                 startActivity(
                     Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:$packageName")
+                        data = "package:$packageName".toUri()
                     }
                 )
             } catch (e: Exception) {

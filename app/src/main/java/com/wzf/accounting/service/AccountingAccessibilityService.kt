@@ -1,7 +1,6 @@
 package com.wzf.accounting.service
 
 import android.accessibilityservice.AccessibilityService
-import android.content.pm.PackageManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -25,10 +24,9 @@ class AccountingAccessibilityService : AccessibilityService() {
             val selectedPackages = store.getSelectedPackages()
             if (selectedPackages.isNotEmpty() && packageName !in selectedPackages) return
 
-            val textFromEvent = event.text?.filter { !it.isNullOrBlank() }
-                ?.joinToString(" ")
-                ?.trim()
-                .orEmpty()
+            val textFromEvent = event.text.filter { !it.isNullOrBlank() }
+                .joinToString(" ")
+                .trim()
 
             val textFromTree = extractTextFromNodeTree(rootInActiveWindow)
 
