@@ -7,14 +7,6 @@ import com.wzf.accounting.data.local.NotificationStore
 import com.wzf.accounting.data.model.AutoAccountingNotification
 
 class AccountingNotificationListenerService : NotificationListenerService() {
-    private val amountPattern = Regex("\\d+(?:\\.\\d{1,2})?")
-    private val decimalPattern = Regex("\\d+\\.\\d+")
-    private val financialKeywords = listOf(
-        "元", "¥", "￥", "$", "€", "£",
-        "支付", "付款", "收款", "转账", "消费", "扣款", "到账", "入账", "充值",
-        "红包", "话费", "余额", "提现", "还款", "账单", "交易", "订单",
-        "payment", "pay", "transfer", "balance", "refund", "charge"
-    )
     private val store by lazy { NotificationStore(applicationContext) }
 
     override fun onListenerConnected() {
@@ -43,7 +35,7 @@ class AccountingNotificationListenerService : NotificationListenerService() {
             }.getOrDefault(sbn.packageName)
             val searchable = "$title $content"
 
-            if (!isLikelyFinancialNotification(searchable)) {
+            if (!NotificationFilter.isLikelyFinancialNotification(searchable)) {
                 Log.d(TAG, "Filtered non-financial notification: package=${sbn.packageName}, title=$title")
                 return
             }
@@ -61,17 +53,6 @@ class AccountingNotificationListenerService : NotificationListenerService() {
                 )
             )
         }.onFailure { Log.e(TAG, "Failed to handle notification from ${sbn.packageName}", it) }
-    }
-
-    private fun isLikelyFinancialNotification(text: String): Boolean {
-        if (!amountPattern.containsMatchIn(text)) return false
-
-        val lowerText = text.lowercase()
-        if (financialKeywords.any { kw -> lowerText.contains(kw.lowercase()) }) return true
-
-        if (decimalPattern.containsMatchIn(text)) return true
-
-        return false
     }
 
     companion object {

@@ -1,8 +1,11 @@
 package com.wzf.accounting.ui.screens
 
 import android.content.ActivityNotFoundException
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wzf.accounting.data.model.AutoAccountingNotification
 import com.wzf.accounting.ui.viewmodel.AccountingViewModel
+import com.wzf.accounting.util.NotificationTestHelper
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
@@ -125,7 +131,60 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
         if (showNotificationSources) {
             NotificationSourcesPage(viewModel = viewModel)
         } else {
+            var showTestPanel by remember { mutableStateOf(false) }
             LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item {
+                    OutlinedCard(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFFFFF8E1))
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("测试通知工具", fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { showTestPanel = !showTestPanel }) {
+                                    Text(if (showTestPanel) "收起" else "展开")
+                                }
+                            }
+                            if (showTestPanel) {
+                                Text(
+                                    "发送模拟通知，验证通知监听(NLS)和无障碍服务(A11y)是否能捕获。发送后请等待 2 秒再刷新列表。",
+                                    fontSize = 12.sp, color = Color.Gray,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(onClick = {
+                                        NotificationTestHelper.sendNormalFinancialNotification(context)
+                                        Toast.makeText(context, "已发送: 普通支付通知(PUBLIC)", Toast.LENGTH_SHORT).show()
+                                        Handler(Looper.getMainLooper()).postDelayed({ viewModel.refreshNotificationData() }, 2000)
+                                    }) { Text("普通支付") }
+                                    OutlinedButton(onClick = {
+                                        NotificationTestHelper.sendPrivateFinancialNotification(context)
+                                        Toast.makeText(context, "已发送: 私密转账通知(SECRET)", Toast.LENGTH_SHORT).show()
+                                        Handler(Looper.getMainLooper()).postDelayed({ viewModel.refreshNotificationData() }, 2000)
+                                    }) { Text("私密转账") }
+                                    OutlinedButton(onClick = {
+                                        NotificationTestHelper.sendBankTransferNotification(context)
+                                        Toast.makeText(context, "已发送: 银行消费通知(SECRET)", Toast.LENGTH_SHORT).show()
+                                        Handler(Looper.getMainLooper()).postDelayed({ viewModel.refreshNotificationData() }, 2000)
+                                    }) { Text("银行消费") }
+                                    OutlinedButton(onClick = {
+                                        NotificationTestHelper.sendRedPacketNotification(context)
+                                        Toast.makeText(context, "已发送: 红包通知(PRIVATE)", Toast.LENGTH_SHORT).show()
+                                        Handler(Looper.getMainLooper()).postDelayed({ viewModel.refreshNotificationData() }, 2000)
+                                    }) { Text("红包") }
+                                    OutlinedButton(onClick = {
+                                        NotificationTestHelper.sendNonFinancialNotification(context)
+                                        Toast.makeText(context, "已发送: 无金额通知(应被过滤)", Toast.LENGTH_SHORT).show()
+                                        Handler(Looper.getMainLooper()).postDelayed({ viewModel.refreshNotificationData() }, 2000)
+                                    }) { Text("非金额(过滤)") }
+                                }
+                            }
+                        }
+                    }
+                }
                 item { Text("待处理通知（${notifications.size}）", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
                 items(notifications) { notification ->
                     NotificationCard(notification, onRecord = { activeNotification = notification }, onDelete = { viewModel.deleteStoredNotification(notification.id) })

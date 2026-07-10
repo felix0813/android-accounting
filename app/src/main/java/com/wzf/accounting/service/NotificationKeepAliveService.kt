@@ -24,6 +24,7 @@ class NotificationKeepAliveService : Service() {
     private val healthCheckRunnable = object : Runnable {
         override fun run() {
             checkNotificationListenerHealth()
+            checkAccessibilityHealth()
             handler.postDelayed(this, HEALTH_CHECK_INTERVAL_MS)
         }
     }
@@ -113,6 +114,25 @@ class NotificationKeepAliveService : Service() {
         }
     }
 
+    private fun checkAccessibilityHealth() {
+        val cn = ComponentName(this, AccountingAccessibilityService::class.java)
+        val enabled = isAccessibilityServiceEnabled(cn)
+        if (!enabled) {
+            Log.w(TAG, "Accessibility service is disabled")
+        } else {
+            Log.d(TAG, "Accessibility service is healthy")
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(componentName: ComponentName): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val expected = componentName.flattenToString()
+        return enabledServices.split(":").any { it.equals(expected, ignoreCase = true) }
+    }
+
     companion object {
         private const val TAG = "KeepAliveSvc"
         private const val FOREGROUND_CHANNEL_ID = "keep_alive_channel"
@@ -121,6 +141,15 @@ class NotificationKeepAliveService : Service() {
 
         fun isNotificationListenerEnabled(componentName: ComponentName, flat: String?): Boolean {
             return flat?.contains(componentName.flattenToString()) == true
+        }
+
+        fun isAccessibilityServiceEnabled(context: android.content.Context, componentName: ComponentName): Boolean {
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+            val expected = componentName.flattenToString()
+            return enabledServices.split(":").any { it.equals(expected, ignoreCase = true) }
         }
     }
 }

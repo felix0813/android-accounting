@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">accounting</string>
+    <string name="accessibility_service_description">自动记账需要此权限来捕获支付通知，包括设为私密的支付通知。此服务仅读取通知内容用于自动记账，不会执行任何其他操作。</string>
 </resources>

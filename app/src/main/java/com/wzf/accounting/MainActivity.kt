@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.wzf.accounting.service.AccountingAccessibilityService
 import com.wzf.accounting.service.AccountingNotificationListenerService
 import com.wzf.accounting.service.NotificationKeepAliveService
 import com.wzf.accounting.ui.screens.AutoAccountingScreen
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         ensureNotificationListenerPermission()
+        ensureAccessibilityServicePermission()
         requestNotificationPermission()
         requestBatteryOptimizationExemption()
         startKeepAliveService()
@@ -114,6 +116,11 @@ class MainActivity : ComponentActivity() {
             Log.w(TAG, "Notification listener not enabled on resume, prompting settings")
             ensureNotificationListenerPermission()
         }
+        val a11yCn = ComponentName(this, AccountingAccessibilityService::class.java)
+        if (!NotificationKeepAliveService.isAccessibilityServiceEnabled(this, a11yCn)) {
+            Log.w(TAG, "Accessibility service not enabled on resume, prompting settings")
+            ensureAccessibilityServicePermission()
+        }
         startKeepAliveService()
     }
 
@@ -126,6 +133,18 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to open notification listener settings", e)
+            }
+        }
+    }
+
+    private fun ensureAccessibilityServicePermission() {
+        val cn = ComponentName(this, AccountingAccessibilityService::class.java)
+        if (!NotificationKeepAliveService.isAccessibilityServiceEnabled(this, cn)) {
+            Log.w(TAG, "Accessibility service not enabled, opening settings")
+            try {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open accessibility settings", e)
             }
         }
     }

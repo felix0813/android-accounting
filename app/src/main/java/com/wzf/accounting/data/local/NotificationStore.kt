@@ -18,10 +18,24 @@ class NotificationStore(context: Context) {
 
     fun saveNotification(notification: AutoAccountingNotification) {
         val current = getNotifications().filterNot { it.id == notification.id }.toMutableList()
+
+        val isRecentDuplicate = current.any { existing ->
+            existing.packageName == notification.packageName &&
+                normalize(existing.title + existing.content) == normalize(notification.title + notification.content) &&
+                kotlin.math.abs(existing.capturedAt - notification.capturedAt) < DEDUP_WINDOW_MS
+        }
+        if (isRecentDuplicate) {
+            Log.d(TAG, "Skipped duplicate notification from ${notification.packageName}")
+            return
+        }
+
         current.add(0, notification)
         persist(current.take(MAX_NOTIFICATIONS))
         Log.d(TAG, "Stored filtered notification from ${notification.packageName}, total=${current.size.coerceAtMost(MAX_NOTIFICATIONS)}")
     }
+
+    private fun normalize(text: String): String =
+        text.replace("\\s+".toRegex(), " ").trim()
 
     fun deleteNotification(id: String) {
         val updated = getNotifications().filterNot { it.id == id }
@@ -54,5 +68,6 @@ class NotificationStore(context: Context) {
         private const val KEY_NOTIFICATIONS = "notifications"
         private const val KEY_SELECTED_PACKAGES = "selected_packages"
         private const val MAX_NOTIFICATIONS = 300
+        private const val DEDUP_WINDOW_MS = 5_000L
     }
 }
