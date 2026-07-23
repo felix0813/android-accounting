@@ -61,7 +61,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         ensureNotificationListenerPermission()
-        ensureAccessibilityServicePermission()
         requestNotificationPermission()
         requestBatteryOptimizationExemption()
         startKeepAliveService()
@@ -119,8 +118,7 @@ class MainActivity : ComponentActivity() {
         }
         val a11yCn = ComponentName(this, AccountingAccessibilityService::class.java)
         if (!NotificationKeepAliveService.isAccessibilityServiceEnabled(this, a11yCn)) {
-            Log.w(TAG, "Accessibility service not enabled on resume, prompting settings")
-            ensureAccessibilityServicePermission()
+            Log.d(TAG, "Accessibility service not enabled (user can enable from the auto-accounting screen)")
         }
         startKeepAliveService()
     }

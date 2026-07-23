@@ -1,8 +1,10 @@
 package com.wzf.accounting.ui.screens
 
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -19,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
@@ -56,6 +59,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wzf.accounting.data.model.AutoAccountingNotification
+import com.wzf.accounting.service.AccountingAccessibilityService
+import com.wzf.accounting.service.NotificationKeepAliveService
 import com.wzf.accounting.ui.viewmodel.AccountingViewModel
 import com.wzf.accounting.util.NotificationTestHelper
 import java.text.SimpleDateFormat
@@ -185,6 +190,36 @@ fun AutoAccountingScreen(viewModel: AccountingViewModel) {
                         }
                     }
                 }
+                item {
+                    val a11yCn = ComponentName(context, AccountingAccessibilityService::class.java)
+                    val a11yEnabled = NotificationKeepAliveService.isAccessibilityServiceEnabled(context, a11yCn)
+                    if (!a11yEnabled) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("无障碍服务未开启", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(
+                                        "用于捕获私密通知，点击右侧按钮前往开启",
+                                        fontSize = 12.sp, color = Color.Gray
+                                    )
+                                }
+                                OutlinedButton(onClick = {
+                                    try {
+                                        context.startActivity(android.content.Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "无法打开无障碍设置", Toast.LENGTH_SHORT).show()
+                                    }
+                                }) { Text("前往开启") }
+                            }
+                        }
+                    }
+                }
                 item { Text("待处理通知（${notifications.size}）", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
                 items(notifications) { notification ->
                     NotificationCard(notification, onRecord = { activeNotification = notification }, onDelete = { viewModel.deleteStoredNotification(notification.id) })
@@ -246,7 +281,7 @@ private fun NotificationCard(notification: AutoAccountingNotification, onRecord:
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "删除") }
             }
             if (notification.title.isNotBlank()) Text(notification.title, fontWeight = FontWeight.SemiBold)
-            Text(notification.content.ifBlank { "（无内容）" })
+            SelectionContainer {Text(notification.content.ifBlank { "（无内容）" })}
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onRecord, enabled = !notification.isRecorded) { Text(if (notification.isRecorded) "已记账" else "提取金额并记账") }
             }

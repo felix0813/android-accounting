@@ -20,20 +20,24 @@ class AccountingAccessibilityService : AccessibilityService() {
 
         runCatching {
             val packageName = event.packageName?.toString() ?: return
+            if (packageName == applicationContext.packageName) return
 
             val selectedPackages = store.getSelectedPackages()
             if (selectedPackages.isNotEmpty() && packageName !in selectedPackages) return
 
-            val textFromEvent = event.text.filter { !it.isNullOrBlank() }
-                .joinToString(" ")
-                .trim()
+            val textFromEvent = event.text?.filter { !it.isNullOrBlank() }
+                ?.joinToString(" ")
+                ?.trim()
+                .orEmpty()
 
-            val textFromTree = extractTextFromNodeTree(rootInActiveWindow)
+            val textFromSource = extractTextFromEventSource(event)
 
-            val combinedText = listOf(textFromEvent, textFromTree)
+            val combinedText = listOf(textFromEvent, textFromSource)
                 .filter { it.isNotBlank() }
                 .distinct()
                 .joinToString(" ")
+
+            Log.d(TAG, "Notification event: package=$packageName, eventText=$textFromEvent, sourceText=$textFromSource")
 
             if (combinedText.isBlank()) {
                 Log.d(TAG, "Empty notification text from accessibility, package=$packageName")
@@ -42,7 +46,7 @@ class AccountingAccessibilityService : AccessibilityService() {
 
             val searchable = combinedText
             if (!NotificationFilter.isLikelyFinancialNotification(searchable)) {
-                Log.d(TAG, "Filtered non-financial notification via accessibility: package=$packageName")
+                Log.d(TAG, "Filtered non-financial notification via accessibility: package=$packageName, text=$searchable")
                 return
             }
 
@@ -70,11 +74,11 @@ class AccountingAccessibilityService : AccessibilityService() {
     }
 
     @Suppress("DEPRECATION")
-    private fun extractTextFromNodeTree(root: AccessibilityNodeInfo?): String {
-        if (root == null) return ""
+    private fun extractTextFromEventSource(event: AccessibilityEvent): String {
+        val source = event.source ?: return ""
         val texts = mutableListOf<String>()
-        collectTexts(root, texts)
-        root.recycle()
+        collectTexts(source, texts)
+        source.recycle()
         return texts.joinToString(" ")
     }
 
