@@ -62,6 +62,7 @@ import com.wzf.accounting.data.model.AutoAccountingNotification
 import com.wzf.accounting.service.AccountingAccessibilityService
 import com.wzf.accounting.service.NotificationKeepAliveService
 import com.wzf.accounting.ui.viewmodel.AccountingViewModel
+import com.wzf.accounting.util.AmountExtractor
 import com.wzf.accounting.util.NotificationTestHelper
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -296,7 +297,7 @@ private fun RecordNotificationDialog(
     onDismiss: () -> Unit,
     onConfirm: (Double, String, String, String) -> Unit
 ) {
-    var amount by remember { mutableStateOf(extractAmount(notification.title + " " + notification.content)?.toString() ?: "") }
+    var amount by remember { mutableStateOf(AmountExtractor.extract(notification.title + " " + notification.content)?.toString() ?: "") }
     var category by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
     var expanded by remember { mutableStateOf(false) }
     val note = listOf(notification.appName, notification.title, notification.content).filter { it.isNotBlank() }.joinToString(" - ").take(200)
@@ -319,4 +320,3 @@ private fun RecordNotificationDialog(
     )
 }
 
-private fun extractAmount(text: String): Double? = Regex("\\d+(?:\\.\\d+)?").find(text)?.value?.toDoubleOrNull()

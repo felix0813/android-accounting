@@ -1,8 +1,9 @@
 package com.wzf.accounting.service
 
+import com.wzf.accounting.util.AmountExtractor
+
 object NotificationFilter {
 
-    private val amountPattern = Regex("\\d+(?:\\.\\d{1,2})?")
     private val decimalPattern = Regex("\\d+\\.\\d+")
     private val financialKeywords = listOf(
         "元", "¥", "￥", "$", "€", "£",
@@ -12,7 +13,7 @@ object NotificationFilter {
     )
 
     fun isLikelyFinancialNotification(text: String): Boolean {
-        if (!amountPattern.containsMatchIn(text)) return false
+        if (!AmountExtractor.containsAmount(text)) return false
 
         val lowerText = text.lowercase()
         if (financialKeywords.any { kw -> lowerText.contains(kw.lowercase()) }) return true
