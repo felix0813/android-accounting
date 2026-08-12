@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
@@ -132,18 +131,6 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to open notification listener settings", e)
-            }
-        }
-    }
-
-    private fun ensureAccessibilityServicePermission() {
-        val cn = ComponentName(this, AccountingAccessibilityService::class.java)
-        if (!NotificationKeepAliveService.isAccessibilityServiceEnabled(this, cn)) {
-            Log.w(TAG, "Accessibility service not enabled, opening settings")
-            try {
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to open accessibility settings", e)
             }
         }
     }
